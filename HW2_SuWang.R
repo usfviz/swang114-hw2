@@ -1,5 +1,42 @@
 library(ggplot2)
 library(shiny)
+library(reshape2)
+
+# DATA IMPORTING AND RESHAPING
+
+life <- read.csv("life_expectancy.csv", header = F)
+country <- read.csv("country_code.csv", header = T)
+fertility <- read.csv("fertility_rate.csv", header = F)
+pop <- read.csv("world_population.csv", header = T)
+
+country_code <- country[,1:2]
+colnames(country_code) <- c("Country Code", "Region")
+
+life <- life[3:nrow(life),] # take out the first 
+colnames(life) <-  sapply(life[1, ], as.character) # let the first row be the header
+life <- life[-1, ] # delete the first row
+life <- life[,-c(3,4,60,61)] # delete indicator columns
+life_long <- melt(life, id.vars=c("Country Name", "Country Code"), variable.name = "Year", value.name = "life_expectancy")
+
+# Repeat the above for fertility data
+fertility <- fertility[3:nrow(fertility),]
+colnames(fertility) <-  sapply(fertility[1, ], as.character) 
+fertility <- fertility[-1, ]
+fertility <- fertility[,-c(3,4,60,61)]
+fertility_long <- melt(fertility, id.vars=c("Country Name", "Country Code"), variable.name = "Year", value.name = "fertility_rate")
+
+pop <- pop[,-c(3,4)]
+colnames(pop) <-  colnames(life) 
+pop_long <- melt(pop, id.vars=c("Country Name", "Country Code"), variable.name = "Year", value.name = "Population")
+
+DF0 <- merge(country_code, life_long, by = "Country Code")
+DF1 <- merge(DF0, fertility_long, by = c("Country Code", "Country Name", "Year"))
+DF2 <- merge(DF1, pop_long, by = c("Country Code", "Country Name", "Year"))
+DF2$Year <- as.character(DF2$Year)
+DF <- DF2[which(DF2$Region != ''),]
+DF <- na.omit(DF)
+
+# Plot in R shiny App
 
 ui <- fluidPage(
 
